@@ -1,10 +1,10 @@
-import Fastify from 'fastify';
-
-import items from 'data/items.json' with { type: 'json' };
-import { Item } from 'src/types.ts';
-import { ItemsGetInQuerySchema, ItemUpdateInSchema } from 'src/validation.ts';
-import { treeifyError, ZodError } from 'zod';
-import { doesItemNeedRevision } from './src/utils.ts';
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import items from "data/items.json" with { type: "json" };
+import { Item } from "src/types.ts";
+import { ItemsGetInQuerySchema, ItemUpdateInSchema } from "src/validation.ts";
+import { treeifyError, ZodError } from "zod";
+import { doesItemNeedRevision } from "./src/utils.ts";
 
 const ITEMS = items as Item[];
 
@@ -12,18 +12,23 @@ const fastify = Fastify({
   logger: true,
 });
 
-await fastify.register((await import('@fastify/middie')).default);
+// await fastify.register((await import("@fastify/middie")).default);
+await fastify.register(cors, {
+  origin: true,
+  methods: ["GET", "PUT", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+});
 
-// Искуственная задержка ответов, чтобы можно было протестировать состояния загрузки
-fastify.use((_, __, next) =>
-  new Promise(res => setTimeout(res, 300 + Math.random() * 700)).then(next),
-);
+// // Искуственная задержка ответов, чтобы можно было протестировать состояния загрузки
+// fastify.use((_, __, next) =>
+//   new Promise((res) => setTimeout(res, 300 + Math.random() * 700)).then(next),
+// );
 
 // Настройка CORS
-fastify.use((_, reply, next) => {
-  reply.setHeader('Access-Control-Allow-Origin', '*');
-  next();
-});
+// fastify.use((_, reply, next) => {
+//   reply.setHeader("Access-Control-Allow-Origin", "*");
+//   next();
+// });
 
 interface ItemGetRequest extends Fastify.RequestGenericInterface {
   Params: {
@@ -31,17 +36,17 @@ interface ItemGetRequest extends Fastify.RequestGenericInterface {
   };
 }
 
-fastify.get<ItemGetRequest>('/items/:id', (request, reply) => {
+fastify.get<ItemGetRequest>("/items/:id", (request, reply) => {
   const itemId = Number(request.params.id);
 
   if (!Number.isFinite(itemId)) {
     reply
       .status(400)
-      .send({ success: false, error: 'Item ID path param should be a number' });
+      .send({ success: false, error: "Item ID path param should be a number" });
     return;
   }
 
-  const item = ITEMS.find(item => item.id === itemId);
+  const item = ITEMS.find((item) => item.id === itemId);
 
   if (!item) {
     reply
@@ -66,7 +71,7 @@ interface ItemsGetRequest extends Fastify.RequestGenericInterface {
   };
 }
 
-fastify.get<ItemsGetRequest>('/items', request => {
+fastify.get<ItemsGetRequest>("/items", (request) => {
   const {
     q,
     limit,
@@ -77,12 +82,12 @@ fastify.get<ItemsGetRequest>('/items', request => {
     sortDirection,
   } = ItemsGetInQuerySchema.parse(request.query);
 
-  const filteredItems = ITEMS.filter(item => {
+  const filteredItems = ITEMS.filter((item) => {
     return (
       item.title.toLowerCase().includes(q.toLowerCase()) &&
       (!needsRevision || doesItemNeedRevision(item)) &&
       (!categories?.length ||
-        categories.some(category => item.category === category))
+        categories.some((category) => item.category === category))
     );
   });
 
@@ -93,18 +98,18 @@ fastify.get<ItemsGetRequest>('/items', request => {
 
         if (!sortDirection) return comparisonValue;
 
-        if (sortColumn === 'title') {
+        if (sortColumn === "title") {
           comparisonValue = item1.title.localeCompare(item2.title);
-        } else if (sortColumn === 'createdAt') {
+        } else if (sortColumn === "createdAt") {
           comparisonValue =
             new Date(item1.createdAt).valueOf() -
             new Date(item2.createdAt).valueOf();
         }
 
-        return (sortDirection === 'desc' ? -1 : 1) * comparisonValue;
+        return (sortDirection === "desc" ? -1 : 1) * comparisonValue;
       })
       .slice(skip, skip + limit)
-      .map(item => ({
+      .map((item) => ({
         category: item.category,
         title: item.title,
         price: item.price,
@@ -120,17 +125,17 @@ interface ItemUpdateRequest extends Fastify.RequestGenericInterface {
   };
 }
 
-fastify.put<ItemUpdateRequest>('/items/:id', (request, reply) => {
+fastify.put<ItemUpdateRequest>("/items/:id", (request, reply) => {
   const itemId = Number(request.params.id);
 
   if (!Number.isFinite(itemId)) {
     reply
       .status(400)
-      .send({ success: false, error: 'Item ID path param should be a number' });
+      .send({ success: false, error: "Item ID path param should be a number" });
     return;
   }
 
-  const itemIndex = ITEMS.findIndex(item => item.id === itemId);
+  const itemIndex = ITEMS.findIndex((item) => item.id === itemId);
 
   if (itemIndex === -1) {
     reply
@@ -163,7 +168,7 @@ fastify.put<ItemUpdateRequest>('/items/:id', (request, reply) => {
   }
 });
 
-const port = Number(process.env.port) ?? 8080;
+const port = Number(process.env.PORT) || 8080;
 
 fastify.listen({ port }, function (err, _address) {
   if (err) {
