@@ -44,3 +44,32 @@ export interface AdDetails {
         color?: string;
       };
 }
+
+export type AdUpdatePayload = {
+  category: "auto" | "real_estate" | "electronics";
+  title: string;
+  description?: string;
+  price: number;
+  params:
+    | {
+        brand?: string;
+        model?: string;
+        yearOfManufacture?: number;
+        transmission?: "automatic" | "manual";
+        mileage?: number;
+        enginePower?: number;
+      }
+    | {
+        type?: "flat" | "house" | "room";
+        address?: string;
+        area?: number;
+        floor?: number;
+      }
+    | {
+        type?: "phone" | "laptop" | "misc";
+        brand?: string;
+        model?: string;
+        condition?: "new" | "used";
+        color?: string;
+      };
+};

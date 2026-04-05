@@ -178,7 +178,7 @@ export const AdDetailsPage = () => {
 
         <div className={styles.descriptionBlock}>
           <h3>Описание</h3>
-          <p>{ad.description || "Описание не указано"}</p>
+          <p>{ad.description || "Описание отсутствует"}</p>
         </div>
       </div>
     </section>
