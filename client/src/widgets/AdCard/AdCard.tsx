@@ -4,7 +4,7 @@ import { formatPrice } from "../../shared/lib/formatPrice";
 
 interface AdCardProps {
   ad: AdListItem;
-  onClick?: () => void;
+  viewMode: "grid" | "list";
 }
 
 const categoryLabels: Record<AdCategory, string> = {
@@ -13,10 +13,14 @@ const categoryLabels: Record<AdCategory, string> = {
   electronics: "Электроника",
 };
 
-export const AdCard = ({ ad, onClick }: AdCardProps) => {
+export const AdCard = ({ ad, viewMode }: AdCardProps) => {
   return (
-    <div className={styles.card} onClick={onClick}>
-      <div className={styles.image}>Нет фото</div>
+    <div className={viewMode === "grid" ? styles.cardGrid : styles.cardList}>
+      <div
+        className={viewMode === "grid" ? styles.imageGrid : styles.imageList}
+      >
+        <span>Нет фото</span>
+      </div>
 
       <div className={styles.content}>
         <span className={styles.category}>{categoryLabels[ad.category]}</span>

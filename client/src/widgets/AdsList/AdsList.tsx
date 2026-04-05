@@ -1,23 +1,17 @@
-import { useNavigate } from "react-router-dom";
 import type { AdListItem } from "../../shared/types/ad";
 import { AdCard } from "../AdCard/AdCard";
 import styles from "./AdsList.module.css";
 
-interface AdsListProps {
+type AdsListProps = {
   ads: AdListItem[];
-}
+  viewMode: "grid" | "list";
+};
 
-export const AdsList = ({ ads }: AdsListProps) => {
-  const navigate = useNavigate();
-
+export const AdsList = ({ ads, viewMode }: AdsListProps) => {
   return (
-    <div className={styles.grid}>
+    <div className={viewMode === "grid" ? styles.grid : styles.list}>
       {ads.map((ad, index) => (
-        <AdCard
-          key={`${ad.title}-${index}`}
-          ad={ad}
-          onClick={() => navigate(`/ads/${index + 1}`)}
-        />
+        <AdCard key={`${ad.title}-${index}`} ad={ad} viewMode={viewMode} />
       ))}
     </div>
   );
