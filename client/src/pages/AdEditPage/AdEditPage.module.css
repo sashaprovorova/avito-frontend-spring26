@@ -105,6 +105,13 @@
   cursor: pointer;
 }
 
+.saveButton:disabled,
+.cancelButton:disabled,
+.aiButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .saveButton {
   background: #1677ff;
   color: #ffffff;
@@ -115,22 +122,75 @@
   color: rgba(0, 0, 0, 0.75);
 }
 
-.aiButton {
-  margin-top: 12px;
-  align-self: flex-start;
-  background: #fff7e6;
-  color: #d48806;
-}
-
-.descriptionRow {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .counter {
   align-self: flex-end;
   font-size: 14px;
   line-height: 22px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.aiResultBox {
+  flex: 0 0 420px;
+  min-width: 420px;
+  max-width: 420px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.aiResultTitle {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.aiResultText {
+  margin: 0 0 16px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.aiActions {
+  display: flex;
+  gap: 12px;
+}
+
+.aiError {
+  margin-top: 12px;
+  color: #ff4d4f;
+}
+
+.descriptionAiRow {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.descriptionInputBlock {
+  flex: 1;
+  min-width: 320px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aiButtonInline {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 16px;
+  line-height: 24px;
+  cursor: pointer;
+  background: #fff7e6;
+  color: #d48806;
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.aiButtonInline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
