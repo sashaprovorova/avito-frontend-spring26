@@ -9,6 +9,16 @@ import {
   suggestPriceApi,
 } from "../../features/ai/api/aiApi";
 
+const sanitizeParams = (params: Record<string, unknown>) => {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => {
+      if (value === undefined || value === null) return false;
+      if (typeof value === "string" && value.trim() === "") return false;
+      return true;
+    }),
+  );
+};
+
 export const AdEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -155,7 +165,14 @@ export const AdEditPage = () => {
 
       console.log("SENDING FORM DATA:", formData);
 
-      await updateAdByIdApi(id, formData);
+      const payloadToSave: AdUpdatePayload = {
+        ...formData,
+        params: sanitizeParams(
+          formData.params as Record<string, unknown>,
+        ) as AdUpdatePayload["params"],
+      };
+
+      await updateAdByIdApi(id, payloadToSave);
       localStorage.removeItem(`ad-edit-draft-${id}`);
       navigate(`/ads/${id}`);
     } catch (error: any) {
