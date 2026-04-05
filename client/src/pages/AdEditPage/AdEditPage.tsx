@@ -4,6 +4,10 @@ import { getAdByIdApi, updateAdByIdApi } from "../../features/ads/api/adsApi";
 import type { AdDetails, AdUpdatePayload } from "../../shared/types/ad";
 import Loader from "../../shared/ui/Loader/Loader";
 import styles from "./AdEditPage.module.css";
+import {
+  generateDescriptionApi,
+  suggestPriceApi,
+} from "../../features/ai/api/aiApi";
 
 export const AdEditPage = () => {
   const { id } = useParams();
@@ -20,7 +24,12 @@ export const AdEditPage = () => {
   const [priceSuggestion, setPriceSuggestion] = useState<string | null>(null);
   const [isDescriptionAiLoading, setIsDescriptionAiLoading] = useState(false);
   const [isPriceAiLoading, setIsPriceAiLoading] = useState(false);
-  const [aiErrorText, setAiErrorText] = useState<string | null>(null);
+  const [hasGeneratedDescription, setHasGeneratedDescription] = useState(false);
+  const [hasGeneratedPrice, setHasGeneratedPrice] = useState(false);
+  const [descriptionAiError, setDescriptionAiError] = useState<string | null>(
+    null,
+  );
+  const [priceAiError, setPriceAiError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAd = async () => {
@@ -37,14 +46,25 @@ export const AdEditPage = () => {
         const draft = localStorage.getItem(`ad-edit-draft-${id}`);
 
         if (draft) {
-          setFormData(JSON.parse(draft));
+          const parsedDraft = JSON.parse(draft);
+
+          setFormData({
+            ...parsedDraft,
+            params: {
+              ...getEmptyParamsByCategory(parsedDraft.category),
+              ...parsedDraft.params,
+            },
+          });
         } else {
           setFormData({
             category: ad.category,
             title: ad.title,
             description: ad.description ?? "",
             price: ad.price ?? 0,
-            params: ad.params,
+            params: {
+              ...getEmptyParamsByCategory(ad.category),
+              ...ad.params,
+            },
           });
         }
       } catch (error) {
@@ -95,6 +115,37 @@ export const AdEditPage = () => {
     });
   };
 
+  const getEmptyParamsByCategory = (category: AdUpdatePayload["category"]) => {
+    switch (category) {
+      case "auto":
+        return {
+          brand: "",
+          model: "",
+          yearOfManufacture: undefined,
+          transmission: undefined,
+          mileage: undefined,
+          enginePower: undefined,
+        };
+
+      case "real_estate":
+        return {
+          type: undefined,
+          address: "",
+          area: undefined,
+          floor: undefined,
+        };
+
+      case "electronics":
+        return {
+          type: undefined,
+          brand: "",
+          model: "",
+          condition: undefined,
+          color: "",
+        };
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!id || !formData) return;
@@ -143,25 +194,17 @@ export const AdEditPage = () => {
       if (!formData) return;
 
       setIsDescriptionAiLoading(true);
-      setAiErrorText(null);
+      setDescriptionAiError(null);
       setDescriptionSuggestion(null);
 
-      const generatedText = `Продаю ${formData.title}. ${
-        "brand" in formData.params && formData.params.brand
-          ? `Бренд: ${formData.params.brand}. `
-          : ""
-      }${
-        "model" in formData.params && formData.params.model
-          ? `Модель: ${formData.params.model}. `
-          : ""
-      }Состояние хорошее, объявление оформлено аккуратно.`;
+      const data = await generateDescriptionApi(formData);
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      setDescriptionSuggestion(generatedText);
+      setDescriptionSuggestion(data.suggestedDescription);
+      setHasGeneratedDescription(true);
     } catch (error) {
       console.error("Ошибка генерации описания", error);
-      setAiErrorText("Не удалось сгенерировать описание");
+      setDescriptionAiError("Попробуйте повторить запрос");
+      setHasGeneratedDescription(true);
     } finally {
       setIsDescriptionAiLoading(false);
     }
@@ -179,20 +222,17 @@ export const AdEditPage = () => {
       if (!formData) return;
 
       setIsPriceAiLoading(true);
-      setAiErrorText(null);
+      setPriceAiError(null);
       setPriceSuggestion(null);
 
-      const generatedPrice =
-        formData.price > 0
-          ? String(Math.round(formData.price * 1.05))
-          : "100000";
+      const data = await suggestPriceApi(formData);
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      setPriceSuggestion(generatedPrice);
+      setPriceSuggestion(String(data.suggestedPrice));
+      setHasGeneratedPrice(true);
     } catch (error) {
       console.error("Ошибка генерации цены", error);
-      setAiErrorText("Не удалось определить рыночную цену");
+      setPriceAiError("Попробуйте повторить запрос");
+      setHasGeneratedPrice(true);
     } finally {
       setIsPriceAiLoading(false);
     }
@@ -217,12 +257,20 @@ export const AdEditPage = () => {
               <select
                 className={styles.select}
                 value={formData.category}
-                onChange={(event) =>
-                  handleChange(
-                    "category",
-                    event.target.value as AdUpdatePayload["category"],
-                  )
-                }
+                onChange={(event) => {
+                  const newCategory = event.target
+                    .value as AdUpdatePayload["category"];
+
+                  setFormData((prev) => {
+                    if (!prev) return prev;
+
+                    return {
+                      ...prev,
+                      category: newCategory,
+                      params: getEmptyParamsByCategory(newCategory),
+                    };
+                  });
+                }}
               >
                 <option value="auto">Авто</option>
                 <option value="real_estate">Недвижимость</option>
@@ -242,14 +290,14 @@ export const AdEditPage = () => {
               />
             </div>
 
-            {/* <div className={styles.field}>
+            <div className={styles.field}>
               <label className={styles.label}>
                 <span className={styles.requiredMark}>*</span>
                 Цена
               </label>
 
-              <div className={styles.aiRow}>
-                <div className={styles.aiLeft}>
+              <div className={styles.descriptionAiRow}>
+                <div className={styles.descriptionInputBlock}>
                   <input
                     className={styles.input}
                     type="number"
@@ -258,18 +306,20 @@ export const AdEditPage = () => {
                       handleChange("price", Number(event.target.value))
                     }
                   />
-
-                  <button
-                    type="button"
-                    className={styles.aiButton}
-                    onClick={handleSuggestPrice}
-                    disabled={isPriceAiLoading}
-                  >
-                    {isPriceAiLoading
-                      ? "Определяем цену..."
-                      : "Узнать рыночную цену"}
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  className={styles.aiButtonInline}
+                  onClick={handleSuggestPrice}
+                  disabled={isPriceAiLoading}
+                >
+                  {isPriceAiLoading
+                    ? "Выполняется запрос..."
+                    : hasGeneratedPrice
+                      ? "Повторить запрос"
+                      : "Узнать рыночную цену"}
+                </button>
 
                 {priceSuggestion && (
                   <div className={styles.aiResultBox}>
@@ -297,62 +347,19 @@ export const AdEditPage = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            </div> */}
-
-            <div className={styles.field}>
-              <label className={styles.label}>
-                <span className={styles.requiredMark}>*</span>
-                Цена
-              </label>
-
-              <div className={styles.descriptionAiRow}>
-                <div className={styles.descriptionInputBlock}>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    value={formData.price}
-                    onChange={(event) =>
-                      handleChange("price", Number(event.target.value))
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.aiButtonInline}
-                  onClick={handleSuggestPrice}
-                  disabled={isPriceAiLoading}
-                >
-                  {isPriceAiLoading
-                    ? "Определяем цену..."
-                    : "Узнать рыночную цену"}
-                </button>
-
-                {priceSuggestion && (
-                  <div className={styles.aiResultBox}>
-                    <p className={styles.aiResultTitle}>Ответ AI:</p>
-                    <p className={styles.aiResultText}>
-                      Рекомендуемая цена: {priceSuggestion} ₽
+                {priceAiError && (
+                  <div className={styles.aiErrorBox}>
+                    <p className={styles.aiErrorTitle}>
+                      Произошла ошибка при запросе к AI
                     </p>
-
-                    <div className={styles.aiActions}>
-                      <button
-                        type="button"
-                        className={styles.saveButton}
-                        onClick={handleApplyPrice}
-                      >
-                        Применить
-                      </button>
-
-                      <button
-                        type="button"
-                        className={styles.cancelButton}
-                        onClick={() => setPriceSuggestion(null)}
-                      >
-                        Закрыть
-                      </button>
-                    </div>
+                    <p className={styles.aiErrorMessage}>{priceAiError}</p>
+                    <button
+                      type="button"
+                      className={styles.aiErrorClose}
+                      onClick={() => setPriceAiError(null)}
+                    >
+                      Закрыть
+                    </button>
                   </div>
                 )}
               </div>
@@ -534,13 +541,13 @@ export const AdEditPage = () => {
               onClick={handleGenerateDescription}
               disabled={isDescriptionAiLoading}
             >
-              {formData.description?.trim()
-                ? isDescriptionAiLoading
-                  ? "Улучшаем описание..."
-                  : "Улучшить описание"
-                : isDescriptionAiLoading
-                  ? "Генерируем описание..."
-                  : "Придумать описание"}
+              {isDescriptionAiLoading
+                ? "Выполняется запрос..."
+                : hasGeneratedDescription
+                  ? "Повторить запрос"
+                  : formData.description?.trim()
+                    ? "Улучшить описание"
+                    : "Придумать описание"}
             </button>
 
             {descriptionSuggestion && (
@@ -567,9 +574,22 @@ export const AdEditPage = () => {
                 </div>
               </div>
             )}
+            {descriptionAiError && (
+              <div className={styles.aiErrorBox}>
+                <p className={styles.aiErrorTitle}>
+                  Произошла ошибка при запросе к AI
+                </p>
+                <p className={styles.aiErrorMessage}>{descriptionAiError}</p>
+                <button
+                  type="button"
+                  className={styles.aiErrorClose}
+                  onClick={() => setDescriptionAiError(null)}
+                >
+                  Закрыть
+                </button>
+              </div>
+            )}
           </div>
-
-          {aiErrorText && <p className={styles.aiError}>{aiErrorText}</p>}
         </div>
 
         <div className={styles.actions}>
