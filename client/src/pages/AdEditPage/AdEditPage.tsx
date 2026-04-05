@@ -175,15 +175,13 @@ export const AdEditPage = () => {
       await updateAdByIdApi(id, payloadToSave);
       localStorage.removeItem(`ad-edit-draft-${id}`);
       navigate(`/ads/${id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Не удалось сохранить объявление", error);
-      console.error("SERVER ERROR:", error?.response?.data);
-
-      setErrorText(
-        error?.response?.data
-          ? JSON.stringify(error.response.data)
-          : "Не удалось сохранить объявление",
-      );
+      if (error instanceof Error) {
+        setErrorText(error.message);
+      } else {
+        setErrorText("Не удалось сохранить объявление");
+      }
     } finally {
       setIsSaving(false);
     }
