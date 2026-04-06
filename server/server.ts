@@ -110,6 +110,7 @@ fastify.get<ItemsGetRequest>("/items", (request) => {
       })
       .slice(skip, skip + limit)
       .map((item) => ({
+        id: item.id,
         category: item.category,
         title: item.title,
         price: item.price,
@@ -165,6 +166,117 @@ fastify.put<ItemUpdateRequest>("/items/:id", (request, reply) => {
     }
 
     throw error;
+  }
+});
+
+fastify.post("/ai/generate-description", async (request, reply) => {
+  try {
+    const { title, category, price, params } = request.body as {
+      title: string;
+      category: string;
+      price: number;
+      params: Record<string, unknown>;
+    };
+
+    const prompt = `
+Сгенерируй короткое, понятное и продающее описание объявления.
+Пиши только на русском языке.
+Не используй markdown, звёздочки и списки.
+Не добавляй выдуманные характеристики.
+Не добавляй контакты, доставку, торг, если этого нет во входных данных.
+
+Данные объявления:
+Название: ${title}
+Категория: ${category}
+Цена: ${price}
+Характеристики: ${JSON.stringify(params)}
+
+Верни только готовый текст описания.
+`;
+
+    const ollamaResponse = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama3",
+        prompt,
+        stream: false,
+      }),
+    });
+
+    if (!ollamaResponse.ok) {
+      reply
+        .status(500)
+        .send({ success: false, error: "Ollama request failed" });
+      return;
+    }
+
+    const data = (await ollamaResponse.json()) as { response?: string };
+
+    return {
+      suggestedDescription: data.response?.trim() ?? "",
+    };
+  } catch (error) {
+    reply
+      .status(500)
+      .send({ success: false, error: "Failed to generate description" });
+  }
+});
+
+fastify.post("/ai/suggest-price", async (request, reply) => {
+  try {
+    const { title, category, price, params } = request.body as {
+      title: string;
+      category: string;
+      price: number;
+      params: Record<string, unknown>;
+    };
+
+    const prompt = `
+Оцени примерную рыночную цену товара.
+Пиши только на русском языке.
+Верни только одно число без валюты, без пояснений, без текста.
+
+Данные объявления:
+Название: ${title}
+Категория: ${category}
+Текущая цена: ${price}
+Характеристики: ${JSON.stringify(params)}
+`;
+
+    const ollamaResponse = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama3",
+        prompt,
+        stream: false,
+      }),
+    });
+
+    if (!ollamaResponse.ok) {
+      reply
+        .status(500)
+        .send({ success: false, error: "Ollama request failed" });
+      return;
+    }
+
+    const data = (await ollamaResponse.json()) as { response?: string };
+
+    const rawText = data.response?.trim() ?? "";
+    const parsedNumber = Number(rawText.replace(/[^\d]/g, ""));
+
+    return {
+      suggestedPrice: Number.isNaN(parsedNumber) ? price : parsedNumber,
+    };
+  } catch (error) {
+    reply
+      .status(500)
+      .send({ success: false, error: "Failed to suggest price" });
   }
 });
 
