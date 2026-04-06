@@ -180,12 +180,6 @@
   color: #1677ff;
 }
 
-.pageArrow:disabled {
-  color: rgba(0, 0, 0, 0.2);
-  cursor: not-allowed;
-  background: #fafafa;
-}
-
 .pageArrow:hover:not(:disabled),
 .pageNumber:hover:not(.pageNumberActive) {
   border-color: #bfbfbf;

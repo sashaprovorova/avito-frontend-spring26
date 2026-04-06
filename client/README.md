@@ -1,73 +1,164 @@
-# React + TypeScript + Vite
+# Приложение для управления объявлениями
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Описание проекта
 
-Currently, two official plugins are available:
+Веб-приложение для работы с объявлениями:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- просмотр списка объявлений
+- фильтрация, поиск и сортировка
+- просмотр деталей объявления
+- редактирование объявления
+- генерация описания и цены с использованием LLM
 
-## React Compiler
+Проект реализован на React + TypeScript + Vite.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Основной функционал
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Список объявлений
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+- поиск по названию
+- фильтрация по категории
+- сортировка по цене и дате
+- переключение Grid / List
+- пагинация
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Детали объявления
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+- просмотр полной информации
+- переход к редактированию
+
+### Редактирование объявления
+
+- изменение всех полей
+- динамические параметры в зависимости от категории
+- сохранение с валидацией
+- обработка ошибок от сервера
+
+### AI функции
+
+- генерация описания
+- генерация цены
+
+---
+
+## Использование LLM (Ollama)
+
+Для генерации текста используется локальная LLM через Ollama.
+
+### Установка Ollama
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Установка модели
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+ollama pull llama3
 ```
+
+### Запуск сервера
+
+```bash
+ollama serve
+```
+
+### Сервер будет доступен по адресу:
+
+```bash
+http://localhost:11434
+
+```
+
+### Использование в проекте
+
+Файл: src/features/ai/api/aiApi.ts
+
+Отправляет запросы к локальному LLM серверу и возвращает:
+
+- описание объявления
+- цену
+
+## Установка и запуск проекта
+
+### Установка зависимостей
+
+```bash
+npm install
+
+```
+
+### Запуск проекта
+
+```bash
+npm run dev
+
+```
+
+### Приложение будет доступно по адресу:
+
+```bash
+http://localhost:5173
+
+```
+
+## Архитектура проекта
+
+```bash
+src/
+ ├── app/            # роутинг
+ ├── pages/          # страницы
+ ├── widgets/        # крупные UI блоки
+ ├── features/       # API и бизнес-логика
+ ├── shared/         # общие утилиты, типы, хуки
+```
+
+## Почему не используется Redux
+
+Изначально планировалось использовать Redux Toolkit, однако в процессе разработки было принято решение отказаться от него.
+
+Причины:
+
+- приложение не имеет сложного глобального состояния
+- большинство данных локальны для страниц
+- использование Redux добавляло избыточную сложность
+- useState полностью покрывает текущие потребности
+
+В результате было выбрано более простое и читаемое решение без глобального стейт-менеджера.
+
+## Кодстайл
+
+### Линтинг
+
+```bash
+npm run lint
+```
+
+### Форматирование
+
+```bash
+npx prettier --write .
+```
+
+## Особенности реализации
+
+- обработка ошибок сервера (включая validation errors)
+- очистка payload перед отправкой (sanitizeParams)
+- динамические формы в зависимости от категории
+- debounce для поиска
+- разделение API по фичам
+
+## Используемые технологии
+
+- React
+- TypeScript
+- Vite
+- Axios
+- CSS Modules
+- Ollama (LLM)
+
+## Итог
+
+Проект реализует основные требования задания и дополнительно включает интеграцию с локальной LLM для генерации контента.

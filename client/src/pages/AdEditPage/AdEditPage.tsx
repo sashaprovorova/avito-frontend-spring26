@@ -8,16 +8,14 @@ import {
   generateDescriptionApi,
   suggestPriceApi,
 } from "../../features/ai/api/aiApi";
+import {
+  getEmptyParamsByCategory,
+  sanitizeParams,
+} from "../../shared/lib/adForm";
+import axios from "axios";
 
-const sanitizeParams = (params: Record<string, unknown>) => {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => {
-      if (value === undefined || value === null) return false;
-      if (typeof value === "string" && value.trim() === "") return false;
-      return true;
-    }),
-  );
-};
+const parseNumberInput = (value: string) =>
+  value.trim() === "" ? undefined : Number(value);
 
 export const AdEditPage = () => {
   const { id } = useParams();
@@ -111,7 +109,10 @@ export const AdEditPage = () => {
     });
   };
 
-  const handleParamChange = (field: string, value: string | number) => {
+  const handleParamChange = (
+    field: string,
+    value: string | number | undefined,
+  ) => {
     setFormData((prev) => {
       if (!prev) return prev;
 
@@ -123,37 +124,6 @@ export const AdEditPage = () => {
         },
       };
     });
-  };
-
-  const getEmptyParamsByCategory = (category: AdUpdatePayload["category"]) => {
-    switch (category) {
-      case "auto":
-        return {
-          brand: "",
-          model: "",
-          yearOfManufacture: undefined,
-          transmission: undefined,
-          mileage: undefined,
-          enginePower: undefined,
-        };
-
-      case "real_estate":
-        return {
-          type: undefined,
-          address: "",
-          area: undefined,
-          floor: undefined,
-        };
-
-      case "electronics":
-        return {
-          type: undefined,
-          brand: "",
-          model: "",
-          condition: undefined,
-          color: "",
-        };
-    }
   };
 
   const handleSave = async () => {
@@ -177,8 +147,13 @@ export const AdEditPage = () => {
       navigate(`/ads/${id}`);
     } catch (error: unknown) {
       console.error("Не удалось сохранить объявление", error);
-      if (error instanceof Error) {
-        setErrorText(error.message);
+
+      if (axios.isAxiosError(error)) {
+        setErrorText(
+          error.response?.data
+            ? JSON.stringify(error.response.data)
+            : "Не удалось сохранить объявление",
+        );
       } else {
         setErrorText("Не удалось сохранить объявление");
       }
@@ -511,7 +486,10 @@ export const AdEditPage = () => {
                   type="number"
                   value={String(formData.params.area ?? "")}
                   onChange={(event) =>
-                    handleParamChange("area", Number(event.target.value))
+                    handleParamChange(
+                      "area",
+                      parseNumberInput(event.target.value),
+                    )
                   }
                 />
               </div>
@@ -525,7 +503,10 @@ export const AdEditPage = () => {
                   type="number"
                   value={String(formData.params.floor ?? "")}
                   onChange={(event) =>
-                    handleParamChange("floor", Number(event.target.value))
+                    handleParamChange(
+                      "floor",
+                      parseNumberInput(event.target.value),
+                    )
                   }
                 />
               </div>

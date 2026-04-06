@@ -95,8 +95,7 @@
 }
 
 .saveButton,
-.cancelButton,
-.aiButton {
+.cancelButton {
   border: none;
   border-radius: 12px;
   padding: 12px 20px;
@@ -106,8 +105,7 @@
 }
 
 .saveButton:disabled,
-.cancelButton:disabled,
-.aiButton:disabled {
+.cancelButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -155,11 +153,6 @@
 .aiActions {
   display: flex;
   gap: 12px;
-}
-
-.aiError {
-  margin-top: 12px;
-  color: #ff4d4f;
 }
 
 .descriptionAiRow {

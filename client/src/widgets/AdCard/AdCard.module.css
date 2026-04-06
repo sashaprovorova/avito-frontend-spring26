@@ -48,12 +48,6 @@
   width: 180px;
   min-width: 180px;
   align-self: stretch;
-  background: #fafafa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #b0b0b0;
-  font-size: 14px;
 }
 
 .content {

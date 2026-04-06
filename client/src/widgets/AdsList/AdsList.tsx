@@ -10,8 +10,8 @@ type AdsListProps = {
 export const AdsList = ({ ads, viewMode }: AdsListProps) => {
   return (
     <div className={viewMode === "grid" ? styles.grid : styles.list}>
-      {ads.map((ad, index) => (
-        <AdCard key={`${ad.title}-${index}`} ad={ad} viewMode={viewMode} />
+      {ads.map((ad) => (
+        <AdCard key={ad.id} ad={ad} viewMode={viewMode} />
       ))}
     </div>
   );
